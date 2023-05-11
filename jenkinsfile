@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    stages {
+         stage('git checkout') {
+            steps {
+                
+             git branch: 'main', url: 'https://github.com/dhal9901/devops.git'
+
+            }
+         }
+        stage('copy files to ansible'){
+        steps{
+        sshagent(['ssh-agent']) {
+    // some block
+
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.26.26 '
+  sh ' scp -r -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/test/* root@172.31.26.26:/opt/'
+  
+   
+        }
+     }
+  }
+   stage('copy web file from ansible to webserver'){
+        steps{
+        sshagent(['ssh-agent']) {
+    // some block
+
+    
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.26.26 ansible-playbook play.yml'
+  
+   
+        }
+}
+    }
+    
+}
+
+}
