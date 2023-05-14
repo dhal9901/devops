@@ -1,0 +1,87 @@
+pipeline {
+    agent any
+    
+    environment{
+        DOCKERHUB_CREDENTIALS=credentials('docker-cred')
+    }
+
+    stages {
+         stage('git checkout') {
+            steps {
+                
+             git branch: 'main', url: 'https://github.com/dhal9901/docker-devops.git'
+
+            }
+         }
+        stage('copy files to ansible'){
+        steps{
+        sshagent(['ssh-agent']) {
+    // some block
+
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 '
+  sh ' scp -r -o  StrictHostKeyChecking=no /var/lib/jenkins/workspace/docker-devops/* root@172.31.19.245:/root/'
+  
+   
+        }
+     }
+  }
+   stage('docker build image'){
+        steps{
+        sshagent(['ssh-agent']) {
+    // some block
+
+    
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 cd /root/'
+     sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 docker image build -t $JOB_NAME_$BUILD_ID .'
+  
+   
+        }
+}
+}
+stage('docker  image TAG'){
+        steps{
+        sshagent(['ssh-agent']) {
+    // some block
+
+    
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 cd /root/'
+     sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 docker image tag $JOB_NAME_$BUILD_ID:latest biplab1995/docker123'
+     
+  
+   
+        }
+}
+}
+
+stage('docker  image push'){
+        steps{
+        sshagent(['ssh-agent']) {
+  withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'password', usernameVariable: 'dockeruser')]) {
+    
+
+
+    
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 docker login -u ${dockeruser} -p ${password}'
+     sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 docker  push  biplab1995/docker123:latest'
+     
+   }
+   
+        }
+}
+}
+stage('docker  container create'){
+        steps{
+        sshagent(['ssh-agent']) {
+    // some block
+
+    
+    sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 '
+     sh 'ssh -o StrictHostKeyChecking=no  root@172.31.19.245 ansible-playbook playbook.yml'
+     
+  
+   
+        }
+}
+}
+}
+}
